@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      Bollard Buddy AR - map street safety devices in the field using AR
+    </title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/play.css" />
+
+    <!-- IMPORTANT: PLACE YOUR SDK SCRIPT TAG BELOW IF FORKING  -->
+    <script src="https://launchar.app/sdk/v1?key=vDhrPJN2RAYrTKXak3LYKFPnPGKYAzKK&redirect=true"></script>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="json-crush.js"></script>
+    <script src="ar-helpers.js"></script>
+    <script src="mini-serialize.js"></script>
+    <script src="https://unpkg.com/3dstreet@0.4.11/dist/aframe-street-component.js"></script>
+    <script src="play.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-particle-system-component@1.1.4/dist/aframe-particle-system-component.min.js"></script>
+  </head>
+  <body>
+    <a-scene
+      vr-mode-ui="enterARButton: #play-button"
+      device-orientation-permission-ui="enabled: false"
+      webxr="requiredFeatures:hit-test,local-floor,dom-overlay;referenceSpaceType:local-floor;overlayElement:#overlay"
+      metadata="lat: 37.766194; long: -122.412989; elevation: -26.5; title: AR Session Entities • Treat AR App"
+      notify
+    >
+      <a-assets>
+        <a-mixin
+          shadow
+          id="dividers-k71"
+          gltf-model="src: url(https://assets.3dstreet.app/sets/uoregon/gltf-exports/draco/traffic-post-k71.glb)"
+        ></a-mixin>
+        <a-mixin
+          shadow
+          id="landscape-sunflower"
+          gltf-model="src: url(https://cdn.glitch.global/b37e506f-65c9-49b0-b29e-ba5c75b8d553/sunflower.glb?v=1711151552432)"
+        ></a-mixin>
+
+        <!-- 
+                                                  loaded from 3dstreet included here for reference 
+        <a-asset-item id="dividers" src="${assetUrl}sets/dividers/gltf-exports/draco/dividers.glb"></a-asset-item>        
+        <a-mixin shadow id="dividers-flowers" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: flowers"></a-mixin>
+        <a-mixin shadow id="dividers-planting-strip" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: planting-strip"></a-mixin>
+        <a-mixin shadow id="dividers-planter-box" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: planter-box"></a-mixin>
+        <a-mixin shadow id="dividers-bush" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: bush"></a-mixin>
+        <a-mixin shadow id="dividers-dome" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: dome"></a-mixin>
+        <a-mixin shadow id="safehit" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: bollard"></a-mixin>
+        <a-mixin shadow id="temporary-barricade" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: barricade"></a-mixin>
+        <a-mixin shadow id="temporary-traffic-cone" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: traffic-cone"></a-mixin>
+        <a-mixin shadow id="temporary-jersey-barrier-plastic" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: jersey-barrier-plastic"></a-mixin>
+        <a-mixin shadow id="temporary-jersey-barrier-concrete" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: jersey-barrier-concrete"></a-mixin> -->
+      </a-assets>
+      <a-entity exit-ar-button="element: #exit-ar" hide-in-ar-mode></a-entity>
+      <!--       <a-entity position="0 0 -1" particle-system="velocityValue: 0 2 0;color: #EF0000,#44CC00"></a-entity>
+ -->
+      <a-camera position="0 1.2 6"></a-camera>
+      <a-ring
+        id="reticle"
+        ar-hit-test-simple
+        rotation="-90 0 0"
+        radius-inner="0.02"
+        radius-outer="0.03"
+      >
+        <a-ring
+          color="yellow"
+          radius-inner="0.04"
+          radius-outer="0.05"
+          animation="property: scale; from: 1 1 1; to: 2 2 2; loop: true; dir: alternate"
+        ></a-ring>
+        <a-ring
+          color="yellow"
+          radius-inner="0.06"
+          radius-outer="0.07"
+          animation="property: scale; from: 1 1 1; to: 3 3 3; loop: true; dir: alternate"
+        ></a-ring>
+      </a-ring>
+      <!-- Environment for 2D and VR viewing. It's auto-hidden in AR mode. -->
+      <a-entity
+        environment="preset: forest; lighting: none; shadow: none; lightPosition: 0 2.15 0"
+        hide-in-ar-mode
+      ></a-entity>
+
+      <a-entity id="parent"></a-entity>
+      <!--         <a-entity id="model"
+            position="0 0 0"
+            rotation="0 0 0"
+            mixin="dividers-flowers">
+      </a-entity> -->
+
+      <a-entity light="type: ambient; intensity: 0.5;"></a-entity>
+      <a-light
+        type="directional"
+        light="castShadow: true;
+                      shadowMapHeight: 1024;
+                      shadowMapWidth: 1024;
+                      shadowCameraLeft: -7;
+                      shadowCameraRight: 5;
+                      shadowCameraBottom: -5;
+                      shadowCameraTop: 5;"
+        id="light"
+        target="model"
+        position="-5 3 1.5"
+      ></a-light>
+
+      <!-- This shadow-receiving plane is only visible in AR mode. -->
+      <a-plane
+        height="15"
+        width="15"
+        position="0 0 0"
+        rotation="-90 0 0"
+        shadow="receive: true"
+        ar-shadows="opacity: 0.3"
+        visible="false"
+        id="shadow-plane"
+      ></a-plane>
+    </a-scene>
+
+    <div id="overlay" draggable="false">
+      <span id="greeting"> Bollard Buddy AR from 3DStreet </span>
+      <button id="exit-ar">SHARE and exit AR mode</button>
+      <div
+        id="play-button"
+        onclick="compassPermission();"
+        class="play-button"
+      ></div>
+
+      <div class="bottom-menu">
+        <p>
+          Selected item:
+          <span id="selectedModel"><b>temporary-traffic-cone</b></span
+          >; Compass: <span id="compass">x</span>
+        </p>
+        <div id="menu" class="scrolling-wrapper">
+          <div class="card selected" id="btn_0"><h2>Cone</h2></div>
+          <div class="card" id="btn_1"><h2>Plant</h2></div>
+          <div class="card" id="btn_2"><h2>Flowers</h2></div>
+          <div class="card" id="btn_3"><h2>Delineator</h2></div>
+          <div class="card" id="btn_4"><h2>Bench</h2></div>
+          <div class="card" id="btn_5"><h2>Lamp</h2></div>
+          <div class="card" id="btn_6"><h2>Dining</h2></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="text">
+      <h1>Bollard Buddy AR from 3DStreet</h1>
+      <img
+        class="floating-image"
+        src="https://cdn.glitch.global/016dcade-c62a-493b-b9f8-e3e5eb189899/buddy.png?v=1710620089785"
+      />
+      <p>
+        App for placing geolocated objects in the field using AR. Demo powered
+        by <a href="https://3dstreet.org">3DStreet</a>.
+      </p>
+      <h2>Open on a mobile device. Orient North and press Play.</h2>
+    </div>
+
+    <div id="post" style="visibility: hidden">
+      <h1>Bollard Buddy AR</h1>
+      <h2>Wow beautiful creation! Here's a magic link for sharing:</h2>
+      <input type="text" id="shareLink" name="shareLink" />
+      <h1>
+        <button id="share">SHARE</button>
+      </h1>
+    </div>
+    <script>
+      function compassPermission() {
+        if (
+          typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+          // (optional) Do something before API request prompt.
+          DeviceOrientationEvent.requestPermission()
+            .then((response) => {
+              // (optional) Do something after API prompt dismissed.
+
+              if (response == "granted") {
+                window.addEventListener("deviceorientation", (e) => {
+                  // do something for 'e' here.
+
+                  // log(e.alpha);
+                  // console.log(e);
+
+                  var compassHeading = 360 - e.alpha;
+                  document.getElementById("compass").textContent =
+                    compassHeading.toFixed(3) + "º";
+                  // DeviceOrientationEvent
+                  //                    log(Math.round(event.alpha));
+                  // log(Math.round(event.beta));
+                  // log(Math.round(event.gamma));
+                });
+              }
+            })
+            .catch(console.error);
+        } else {
+          alert("DeviceMotionEvent is not defined");
+        }
+      }
+    </script>
+    <script>
+      window.POINTERDOWN_STATUS = false; // default is false
+      function share() {
+        if (navigator.share) {
+          navigator
+            .share({
+              title: "Bollard Buddy AR Scene",
+              text: document.getElementById("shareLink").value,
+            })
+            .then(() => console.log("Successful share"))
+            .catch((error) => console.log("Error sharing:", error));
+        }
+      }
+      document.getElementById("share").onclick = share.bind(this);
+
+      function setSelected(mixin) {
+        document.getElementById("selectedModel").textContent = mixin;
+        console.log(this);
+        // Get a list of all the elements with the class "my-class"
+        const elements = document.querySelectorAll(".card");
+
+        // Iterate over the list and remove the class from each element
+        elements.forEach((element) => element.classList.remove("selected"));
+        this.classList.add("selected");
+      }
+
+      document.getElementById("btn_0").onclick = setSelected.bind(
+        document.getElementById("btn_0"),
+        "temporary-traffic-cone"
+      );
+      document.getElementById("btn_1").onclick = setSelected.bind(
+        document.getElementById("btn_1"),
+        "dividers-bush"
+      );
+      document.getElementById("btn_2").onclick = setSelected.bind(
+        document.getElementById("btn_2"),
+        "dividers-flowers"
+      );
+      document.getElementById("btn_3").onclick = setSelected.bind(
+        document.getElementById("btn_3"),
+        "safehit"
+      );
+      document.getElementById("btn_4").onclick = setSelected.bind(
+        document.getElementById("btn_4"),
+        "bench"
+      );
+      document.getElementById("btn_5").onclick = setSelected.bind(
+        document.getElementById("btn_5"),
+        "lamp-traditional"
+      );
+      document.getElementById("btn_6").onclick = setSelected.bind(
+        document.getElementById("btn_6"),
+        "outdoor_dining"
+      );
+      document
+        .getElementById("overlay")
+        .addEventListener("pointerdown", (event) => {
+          console.log("overlay-pointerdown");
+          window.POINTERDOWN_STATUS = true;
+          //   event.preventDefault();
+        });
+      document
+        .getElementById("overlay")
+        .addEventListener("pointerup", (event) => {
+          console.log("overlay-pointerup");
+          setTimeout(() => {
+            window.POINTERDOWN_STATUS = false;
+          }, 100);
+        });
+    </script>
+    <script>
+      <!-- https://github.com/stspanho/aframe-hit-test/blob/master/index.html -->
+      AFRAME.registerComponent("ar-hit-test-simple", {
+        init: function () {
+          this.xrHitTestSource = null;
+          this.viewerSpace = null;
+          this.refSpace = null;
+
+          this.el.sceneEl.renderer.xr.addEventListener("sessionend", (ev) => {
+            this.viewerSpace = null;
+            this.refSpace = null;
+            this.xrHitTestSource = null;
+          });
+          this.el.sceneEl.renderer.xr.addEventListener("sessionstart", (ev) => {
+            let session = this.el.sceneEl.renderer.xr.getSession();
+
+            let element = this.el;
+            session.addEventListener("select", function () {
+              if (window.POINTERDOWN_STATUS) return;
+              let position = element.getAttribute("position");
+              document
+                .getElementById("shadow-plane")
+                .setAttribute("position", position);
+              let newMixin =
+                document.getElementById("selectedModel").textContent;
+              placeElement(newMixin, position);
+              // set DONE button to visible
+              document.getElementById("text").style.visibility = "hidden";
+              document.getElementById("post").style.visibility = "visible";
+              // get new link
+              // set it to the value of span
+              var dataString = getChildEntitiesInfo(
+                document.getElementById("parent")
+              );
+
+              const queryParams = new URLSearchParams(document.location.search);
+              const sceneMetadata = document
+                .querySelector("a-scene")
+                .getAttribute("metadata");
+              let latLongElevationAddon;
+
+              // if querystring and values for lat long elevation, then pass those instead of scene metadata
+              if (
+                queryParams.get("lat") &&
+                queryParams.get("long") &&
+                queryParams.get("elevation")
+              ) {
+                latLongElevationAddon =
+                  "&lat=" +
+                  queryParams.get("lat") +
+                  "&long=" +
+                  queryParams.get("long") +
+                  "&elevation=" +
+                  queryParams.get("elevation");
+              } else {
+                // if no values in querystring then pull from scene
+                latLongElevationAddon =
+                  "&lat=" +
+                  sceneMetadata.lat +
+                  "&long=" +
+                  sceneMetadata.long +
+                  "&elevation=" +
+                  sceneMetadata.elevation;
+              }
+              //
+              document.getElementById("shareLink").value =
+                "https://bollard-buddy-mapper.glitch.me/?data=" +
+                dataString +
+                latLongElevationAddon;
+            });
+
+            session.requestReferenceSpace("viewer").then((space) => {
+              this.viewerSpace = space;
+              session
+                .requestHitTestSource({ space: this.viewerSpace })
+                .then((hitTestSource) => {
+                  this.xrHitTestSource = hitTestSource;
+                });
+            });
+
+            session.requestReferenceSpace("local-floor").then((space) => {
+              this.refSpace = space;
+            });
+          });
+        },
+        tick: function () {
+          if (!this.viewerSpace) return;
+
+          let frame = this.el.sceneEl.frame;
+          let xrViewerPose = frame.getViewerPose(this.refSpace);
+
+          if (this.xrHitTestSource && xrViewerPose) {
+            let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+            if (hitTestResults.length > 0) {
+              let pose = hitTestResults[0].getPose(this.refSpace);
+
+              let inputMat = new THREE.Matrix4();
+              inputMat.fromArray(pose.transform.matrix);
+
+              let position = new THREE.Vector3();
+              position.setFromMatrixPosition(inputMat);
+              this.el.setAttribute("position", position);
+            }
+          }
+        },
+      });
+    </script>
+  </body>
+</html>
