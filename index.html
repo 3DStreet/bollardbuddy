@@ -42,6 +42,29 @@
           gltf-model="src: url(https://cdn.glitch.me/b37e506f-65c9-49b0-b29e-ba5c75b8d553/sunflower.glb?v=1711151552432)"
         ></a-mixin>
 
+        <a-mixin
+        shadow
+        id="temporary-traffic-cone"
+        gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-traffic-cone.glb)"
+      ></a-mixin>
+
+      <a-mixin
+      shadow
+      id="dividers-flowers"
+      gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-flowers.glb)"
+    ></a-mixin>
+
+    <a-mixin
+    shadow
+    id="dividers-bollard"
+    gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-bollard.glb)"
+  ></a-mixin>
+
+  <a-mixin
+  shadow
+  id="safehit"
+  gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-safehit.glb)"
+></a-mixin>
         <!-- 
                                                   loaded from 3dstreet included here for reference 
         <a-asset-item id="dividers" src="${assetUrl}sets/dividers/gltf-exports/draco/dividers.glb"></a-asset-item>        
@@ -138,7 +161,7 @@
         </p>
         <div id="menu" class="scrolling-wrapper">
           <div class="card selected" id="btn_0"><h2>Cone</h2></div>
-          <div class="card" id="btn_1"><h2>Plant</h2></div>
+          <div class="card" id="btn_1"><h2>Bollard</h2></div>
           <div class="card" id="btn_2"><h2>Flowers</h2></div>
           <div class="card" id="btn_3"><h2>Delineator</h2></div>
           <div class="card" id="btn_4"><h2>Bench</h2></div>
@@ -235,7 +258,7 @@
       );
       document.getElementById("btn_1").onclick = setSelected.bind(
         document.getElementById("btn_1"),
-        "dividers-bush"
+        "dividers-bollard"
       );
       document.getElementById("btn_2").onclick = setSelected.bind(
         document.getElementById("btn_2"),
