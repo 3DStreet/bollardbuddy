@@ -110,11 +110,6 @@
       ></a-entity>
 
       <a-entity id="parent"></a-entity>
-      <!--         <a-entity id="model"
-            position="0 0 0"
-            rotation="0 0 0"
-            mixin="dividers-flowers">
-      </a-entity> -->
 
       <a-entity light="type: ambient; intensity: 0.5;"></a-entity>
       <a-light
@@ -325,8 +320,8 @@
               // set DONE button to visible
               document.getElementById("text").style.visibility = "hidden";
               document.getElementById("post").style.visibility = "visible";
-              // get new link
-              // set it to the value of span
+
+              // Get the uncrushed child entities data
               var dataString = getChildEntitiesInfo(
                 document.getElementById("parent")
               );
@@ -335,36 +330,46 @@
               const sceneMetadata = document
                 .querySelector("a-scene")
                 .getAttribute("metadata");
-              let latLongElevationAddon;
 
-              // if querystring and values for lat long elevation, then pass those instead of scene metadata
-              if (
-                queryParams.get("lat") &&
-                queryParams.get("long") &&
-                queryParams.get("elevation")
-              ) {
-                latLongElevationAddon =
-                  "&lat=" +
-                  queryParams.get("lat") +
-                  "&long=" +
-                  queryParams.get("long") +
-                  "&elevation=" +
-                  queryParams.get("elevation");
-              } else {
-                // if no values in querystring then pull from scene
-                latLongElevationAddon =
-                  "&lat=" +
-                  sceneMetadata.lat +
-                  "&long=" +
-                  sceneMetadata.long +
-                  "&elevation=" +
-                  sceneMetadata.elevation;
-              }
-              //
+              // Get lat/long/elevation from either query params or scene metadata
+              const lat = queryParams.get("lat") || sceneMetadata.lat;
+              const long = queryParams.get("long") || sceneMetadata.long;
+              const elevation = queryParams.get("elevation") || sceneMetadata.elevation;
+
+              // Build the scene data structure
+              let sceneData = {
+                title: "Awesome Title",
+                version: "0.5.5",
+                data: [
+                  {
+                    id: "street-container",
+                    "data-layer-name": "User Layers",
+                    components: {},
+                    children: dataString
+                  }
+                  // {
+                  //   id: "environment",
+                  //   "data-layer-name": "Environment",
+                  //   components: {"street-environment": ""}
+                  // },
+                  // {
+                  //   id: "reference-layers",
+                  //   "data-layer-name": "Geospatial Layers",
+                  //   components: {
+                  //     "street-geo": `longitude: ${long}; latitude: ${lat}; orthometricHeight: ${elevation};`
+                  //   }
+                  // }
+                ]
+              };
+              
               document.getElementById("shareLink").value =
-                "https://bollard-buddy-mapper.glitch.me/?data=" +
-                dataString +
-                latLongElevationAddon;
+                "http://localhost:3333/#crushed-3dstreet-json:" +
+                encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
+
+              // production -- not ready for this yet
+              // document.getElementById("shareLink").value =
+              //   "https://3dstreet.app/#crushed-3dstreet-json:" +
+              //   dataString;
             });
 
             session.requestReferenceSpace("viewer").then((space) => {

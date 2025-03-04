@@ -22,7 +22,7 @@ function placeElement(mixin, position) {
   document.getElementById('parent').append(newEl);
 };
 
-// Function to get child entities information as JSON
+// Function to get child entities information as NOT Crushed JSON
 function getChildEntitiesInfo(parentEl) {
   const precision = 4;
   const childEls = parentEl.children;
@@ -36,20 +36,22 @@ function getChildEntitiesInfo(parentEl) {
     
     childEntitiesInfo.push({
       mixin: mixinValue,
-      position: {
-        x: parseFloat(positionValue.x.toFixed(precision)),
-        y: parseFloat(positionValue.y.toFixed(precision)),
-        z: parseFloat(positionValue.z.toFixed(precision))
-      },
-      rotation: {
-        x: parseFloat(rotationValue.x.toFixed(precision)),
-        y: parseFloat(rotationValue.y.toFixed(precision)),
-        z: parseFloat(rotationValue.z.toFixed(precision))
+      components: {
+        position: {
+          x: parseFloat(positionValue.x.toFixed(precision)),
+          y: parseFloat(positionValue.y.toFixed(precision)),
+          z: parseFloat(positionValue.z.toFixed(precision))
+        },
+        rotation: {
+          x: parseFloat(rotationValue.x.toFixed(precision)),
+          y: parseFloat(rotationValue.y.toFixed(precision)),
+          z: parseFloat(rotationValue.z.toFixed(precision))
+        }
       }
     });
   }
   console.log(childEntitiesInfo)
-  return encodeURIComponent(window.JSONCrush.crush(JSON.stringify(childEntitiesInfo)));
+  return childEntitiesInfo;
 }
 
 // Function to add child entities from JSON
