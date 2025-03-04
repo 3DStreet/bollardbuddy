@@ -338,14 +338,18 @@
 
               // Build the scene data structure
               let sceneData = {
-                title: "Awesome Title",
+                title: "Bollard Buddy Session",
                 version: "0.5.5",
                 data: [
                   {
                     id: "street-container",
                     "data-layer-name": "User Layers",
                     components: {},
+                    children: [                  {
+                    "data-layer-name": "Bollard Buddy Session",
+                    components: {},
                     children: dataString
+                  }]
                   }
                   // {
                   //   id: "environment",
