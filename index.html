@@ -366,14 +366,15 @@
                 ]
               };
               
-              document.getElementById("shareLink").value =
-                "http://localhost:3333/#crushed-3dstreet-json:" +
-                encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
-
-              // production -- not ready for this yet
+              // local dev
               // document.getElementById("shareLink").value =
-              //   "https://3dstreet.app/#crushed-3dstreet-json:" +
-              //   dataString;
+              //   "http://localhost:3333/#crushed-3dstreet-json:" +
+              //   encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
+
+              // production
+              document.getElementById("shareLink").value =
+                "https://3dstreet.app/#crushed-3dstreet-json:" +
+                encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
             });
 
             session.requestReferenceSpace("viewer").then((space) => {
