@@ -17,6 +17,152 @@
     <script src="json-crush.js"></script>
     <script src="ar-helpers.js"></script>
     <script src="mini-serialize.js"></script>
+    <script>
+      // Simplified measure line component for Bollard Buddy
+      AFRAME.registerComponent('measure-line', {
+        schema: {
+          start: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },
+          end: { type: 'vec3', default: { x: 0, y: 0, z: 0 } }
+        },
+        init: function () {
+          this.tmpQuaternion = new THREE.Quaternion();
+          this.direction = new THREE.Vector3();
+          this.radius = 0.05;
+          this.color = 0xffff00;
+          this.endpointRadius = 0.15;
+          this.startColor = 0x00ff00;
+          this.endColor = 0xff0000;
+          
+          // Create label div
+          const labelDiv = document.createElement('div');
+          labelDiv.className = 'measure-label';
+          labelDiv.style.color = '#FFF';
+          labelDiv.style.fontFamily = 'sans-serif';
+          labelDiv.style.padding = '4px 8px';
+          labelDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+          labelDiv.style.borderRadius = '4px';
+          labelDiv.style.fontSize = '14px';
+          labelDiv.style.fontWeight = 'bold';
+          labelDiv.style.position = 'absolute';
+          labelDiv.style.zIndex = '1000';
+          labelDiv.style.pointerEvents = 'none';
+          this.labelDiv = labelDiv;
+          document.body.appendChild(labelDiv);
+        },
+        update: function () {
+          this.createOrUpdateHelper();
+        },
+        createOrUpdateHelper: function () {
+          const start = this.data.start;
+          const end = this.data.end;
+          const length = this.calculateLength();
+          
+          // Create cylinder geometry
+          const geometry = new THREE.CylinderGeometry(this.radius, this.radius, length, 8);
+          
+          if (!this.mesh) {
+            const material = new THREE.MeshBasicMaterial({
+              color: this.color,
+              transparent: true,
+              opacity: 0.7,
+              depthTest: false
+            });
+            this.mesh = new THREE.Mesh(geometry, material);
+            this.el.setObject3D('helper', this.mesh);
+          } else {
+            this.mesh.geometry.dispose();
+            this.mesh.geometry = geometry;
+          }
+          
+          // Position at midpoint
+          this.mesh.position.set(
+            (start.x + end.x) / 2,
+            (start.y + end.y) / 2,
+            (start.z + end.z) / 2
+          );
+          
+          // Rotate to align with direction
+          const up = new THREE.Vector3(0, 1, 0);
+          this.direction.set(end.x - start.x, end.y - start.y, end.z - start.z).normalize();
+          this.tmpQuaternion.setFromUnitVectors(up, this.direction);
+          this.mesh.setRotationFromQuaternion(this.tmpQuaternion);
+          
+          this.createOrUpdateEndpoints(start, end);
+          this.updateLabel(length);
+        },
+        createOrUpdateEndpoints: function (start, end) {
+          const sphereGeometry = new THREE.SphereGeometry(this.endpointRadius, 16, 16);
+          
+          if (!this.startEndpoint) {
+            const startMaterial = new THREE.MeshBasicMaterial({
+              color: this.startColor,
+              transparent: true,
+              opacity: 0.8,
+              depthTest: false
+            });
+            this.startEndpoint = new THREE.Mesh(sphereGeometry, startMaterial);
+            this.el.setObject3D('startEndpoint', this.startEndpoint);
+          }
+          this.startEndpoint.position.set(start.x, start.y, start.z);
+          
+          if (!this.endEndpoint) {
+            const endMaterial = new THREE.MeshBasicMaterial({
+              color: this.endColor,
+              transparent: true,
+              opacity: 0.8,
+              depthTest: false
+            });
+            this.endEndpoint = new THREE.Mesh(sphereGeometry, endMaterial);
+            this.el.setObject3D('endEndpoint', this.endEndpoint);
+          }
+          this.endEndpoint.position.set(end.x, end.y, end.z);
+        },
+        updateLabel: function (length) {
+          this.labelDiv.textContent = `${length.toFixed(2)}m`;
+          
+          // Position label at midpoint
+          const midpoint = new THREE.Vector3(
+            (this.data.start.x + this.data.end.x) / 2,
+            (this.data.start.y + this.data.end.y) / 2 + 0.5,
+            (this.data.start.z + this.data.end.z) / 2
+          );
+          
+          // Project to screen coordinates
+          const camera = this.el.sceneEl.camera;
+          const vector = midpoint.clone().project(camera);
+          const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+          
+          this.labelDiv.style.left = x + 'px';
+          this.labelDiv.style.top = y + 'px';
+        },
+        calculateLength: function () {
+          const start = this.data.start;
+          const end = this.data.end;
+          const xDiff = end.x - start.x;
+          const yDiff = end.y - start.y;
+          const zDiff = end.z - start.z;
+          return Math.sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
+        },
+        remove: function () {
+          if (this.mesh) {
+            this.mesh.material.dispose();
+            this.mesh.geometry.dispose();
+          }
+          if (this.startEndpoint) {
+            this.startEndpoint.material.dispose();
+            this.startEndpoint.geometry.dispose();
+          }
+          if (this.endEndpoint) {
+            this.endEndpoint.material.dispose();
+            this.endEndpoint.geometry.dispose();
+          }
+          if (this.labelDiv) {
+            this.labelDiv.remove();
+          }
+        }
+      });
+    </script>
     <!-- <script src="https://unpkg.com/3dstreet@0.4.11/dist/aframe-street-component.js"></script> -->
     <script src="play.js"></script>
 
@@ -162,6 +308,7 @@
           <div class="card" id="btn_4"><h2>Bench</h2></div>
           <div class="card" id="btn_5"><h2>Lamp</h2></div>
           <div class="card" id="btn_6"><h2>Dining</h2></div>
+          <div class="card" id="btn_7"><h2>Measure</h2></div>
         </div>
       </div>
     </div>
@@ -219,6 +366,48 @@
     </script>
     <script>
       window.POINTERDOWN_STATUS = false; // default is false
+      window.MEASURE_STATE = { 
+        isActive: false, 
+        startPoint: null, 
+        currentMeasure: null 
+      };
+      
+      function handleMeasureClick(position) {
+        if (!window.MEASURE_STATE.isActive) {
+          // First click - create measure line and set start point
+          window.MEASURE_STATE.isActive = true;
+          window.MEASURE_STATE.startPoint = {x: position.x, y: position.y, z: position.z};
+          
+          const measureId = "measure-" + Date.now();
+          const measureEntity = document.createElement("a-entity");
+          measureEntity.setAttribute("id", measureId);
+          measureEntity.setAttribute("measure-line", {
+            start: window.MEASURE_STATE.startPoint,
+            end: window.MEASURE_STATE.startPoint // Start with same point
+          });
+          
+          document.getElementById("parent").appendChild(measureEntity);
+          window.MEASURE_STATE.currentMeasure = measureEntity;
+          
+          console.log("Measurement started at:", position);
+        } else {
+          // Second click - finalize measurement
+          const endPoint = {x: position.x, y: position.y, z: position.z};
+          
+          if (window.MEASURE_STATE.currentMeasure) {
+            window.MEASURE_STATE.currentMeasure.setAttribute("measure-line", {
+              start: window.MEASURE_STATE.startPoint,
+              end: endPoint
+            });
+          }
+          
+          // Reset state
+          window.MEASURE_STATE.isActive = false;
+          window.MEASURE_STATE.startPoint = null;
+          
+          console.log("Measurement completed:", window.MEASURE_STATE.startPoint, "to", endPoint);
+        }
+      }
       function share() {
         if (navigator.share) {
           navigator
@@ -271,6 +460,10 @@
         document.getElementById("btn_6"),
         "outdoor_dining"
       );
+      document.getElementById("btn_7").onclick = setSelected.bind(
+        document.getElementById("btn_7"),
+        "measure-line"
+      );
       document
         .getElementById("overlay")
         .addEventListener("pointerdown", (event) => {
@@ -312,10 +505,20 @@
                 .setAttribute("position", position);
               let newMixin =
                 document.getElementById("selectedModel").textContent;
-              placeElement(newMixin, position);
-              // set DONE button to visible
-              document.getElementById("text").style.visibility = "hidden";
-              document.getElementById("post").style.visibility = "visible";
+              
+              if (newMixin === "measure-line") {
+                handleMeasureClick(position);
+                // Only show DONE button after completing measurement (second click)
+                if (!window.MEASURE_STATE.isActive && window.MEASURE_STATE.currentMeasure) {
+                  document.getElementById("text").style.visibility = "hidden";
+                  document.getElementById("post").style.visibility = "visible";
+                }
+              } else {
+                placeElement(newMixin, position);
+                // set DONE button to visible
+                document.getElementById("text").style.visibility = "hidden";
+                document.getElementById("post").style.visibility = "visible";
+              }
 
               // Get the uncrushed child entities data
               var dataString = getChildEntitiesInfo(
@@ -404,6 +607,15 @@
               let position = new THREE.Vector3();
               position.setFromMatrixPosition(inputMat);
               this.el.setAttribute("position", position);
+              
+              // Update measure line end point if in measurement mode
+              if (window.MEASURE_STATE.isActive && window.MEASURE_STATE.currentMeasure) {
+                const endPoint = {x: position.x, y: position.y, z: position.z};
+                window.MEASURE_STATE.currentMeasure.setAttribute("measure-line", {
+                  start: window.MEASURE_STATE.startPoint,
+                  end: endPoint
+                });
+              }
             }
           }
         },
