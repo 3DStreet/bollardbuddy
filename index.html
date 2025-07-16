@@ -366,6 +366,9 @@
       
       // Add tracking quality event listener
       document.addEventListener('vlaunch-ar-tracking', function(event) {
+        console.log('vlaunch-ar-tracking event received:', event);
+        console.log('Event detail:', event.detail);
+        
         const trackingState = event.detail.state;
         const trackingElement = document.getElementById('tracking');
         
@@ -379,6 +382,18 @@
         
         console.log('Tracking quality changed:', trackingState);
       });
+      
+      // Debug: Check if we're getting any tracking events at all
+      console.log('Tracking event listener added');
+      
+      // Debug: Test if the element exists
+      setTimeout(() => {
+        const trackingElement = document.getElementById('tracking');
+        console.log('Tracking element found:', trackingElement);
+        if (trackingElement) {
+          trackingElement.textContent = 'listening...';
+        }
+      }, 1000);
       
       function getTrackingColor(state) {
         switch (state) {
