@@ -27,9 +27,9 @@
         init: function () {
           this.tmpQuaternion = new THREE.Quaternion();
           this.direction = new THREE.Vector3();
-          this.radius = 0.05;
+          this.radius = 0.025;
           this.color = 0xffff00;
-          this.endpointRadius = 0.15;
+          this.endpointRadius = 0.075;
           this.startColor = 0x00ff00;
           this.endColor = 0xff0000;
           
@@ -298,7 +298,7 @@
         <p>
           Selected item:
           <span id="selectedModel"><b>temporary-traffic-cone</b></span
-          >; Compass: <span id="compass">x</span>
+          >; Compass: <span id="compass">x</span>; Tracking: <span id="tracking">unknown</span>
         </p>
         <div id="menu" class="scrolling-wrapper">
           <div class="card selected" id="btn_0"><h2>Cone</h2></div>
@@ -361,6 +361,38 @@
             .catch(console.error);
         } else {
           alert("DeviceMotionEvent is not defined");
+        }
+      }
+      
+      // Add tracking quality event listener
+      document.addEventListener('vlaunch-ar-tracking', function(event) {
+        const trackingState = event.detail.state;
+        const trackingElement = document.getElementById('tracking');
+        
+        if (trackingElement) {
+          // Display the tracking state
+          trackingElement.textContent = trackingState;
+          
+          // Add color coding based on tracking quality
+          trackingElement.style.color = getTrackingColor(trackingState);
+        }
+        
+        console.log('Tracking quality changed:', trackingState);
+      });
+      
+      function getTrackingColor(state) {
+        switch (state) {
+          case 'normal':
+            return '#00ff00'; // Green for good tracking
+          case 'not-available':
+            return '#ff0000'; // Red for no tracking
+          case 'limited-excessive-motion':
+          case 'limited-initializing':
+          case 'limited-insufficient-features':
+          case 'limited-relocalizing':
+            return '#ffaa00'; // Orange for limited tracking
+          default:
+            return '#ffffff'; // White for unknown
         }
       }
     </script>
