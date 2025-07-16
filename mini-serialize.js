@@ -34,7 +34,7 @@ function getChildEntitiesInfo(parentEl) {
     const positionValue = childEl.getAttribute('position');
     const rotationValue = childEl.getAttribute('rotation');
     
-    childEntitiesInfo.push({
+    const entityInfo = {
       mixin: mixinValue,
       components: {
         position: {
@@ -48,7 +48,26 @@ function getChildEntitiesInfo(parentEl) {
           z: parseFloat(rotationValue.z.toFixed(precision))
         }
       }
-    });
+    };
+    
+    // Check if this entity has a measure-line component
+    const measureLineData = childEl.getAttribute('measure-line');
+    if (measureLineData) {
+      entityInfo.components['measure-line'] = {
+        start: {
+          x: parseFloat(measureLineData.start.x.toFixed(precision)),
+          y: parseFloat(measureLineData.start.y.toFixed(precision)),
+          z: parseFloat(measureLineData.start.z.toFixed(precision))
+        },
+        end: {
+          x: parseFloat(measureLineData.end.x.toFixed(precision)),
+          y: parseFloat(measureLineData.end.y.toFixed(precision)),
+          z: parseFloat(measureLineData.end.z.toFixed(precision))
+        }
+      };
+    }
+    
+    childEntitiesInfo.push(entityInfo);
   }
   console.log(childEntitiesInfo)
   return childEntitiesInfo;
