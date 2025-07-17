@@ -298,7 +298,7 @@
         <p>
           Selected item:
           <span id="selectedModel"><b>temporary-traffic-cone</b></span
-          >; Compass: <span id="compass">x</span>; Tracking: <span id="tracking">unknown</span>
+          >; Compass: <span id="compass">x</span> <span id="tracking"></span>
         </p>
         <div id="menu" class="scrolling-wrapper">
           <div class="card selected" id="btn_0"><h2>Cone</h2></div>
@@ -364,36 +364,37 @@
         }
       }
       
-      // Add tracking quality event listener
-      document.addEventListener('vlaunch-ar-tracking', function(event) {
-        console.log('vlaunch-ar-tracking event received:', event);
-        console.log('Event detail:', event.detail);
-        
-        const trackingState = event.detail.state;
-        const trackingElement = document.getElementById('tracking');
-        
-        if (trackingElement) {
-          // Display the tracking state
-          trackingElement.textContent = trackingState;
+      window.addEventListener('vlaunch-initialized', (event) => {
+        console.log('vlaunch-initialized', event);
+        if (event.detail.browser === "launch-viewer") {
+
+          // Debug: Test if the element exists
+          setTimeout(() => {
+            const trackingElement = document.getElementById('tracking');
+            console.log('Tracking element found:', trackingElement);
+            if (trackingElement) {
+              trackingElement.textContent = 'Tracking: Initializing...';
+            }
+          }, 1000);
           
-          // Add color coding based on tracking quality
-          trackingElement.style.color = getTrackingColor(trackingState);
+          // Add tracking quality event listener
+          window.addEventListener('vlaunch-ar-tracking', function(event) {
+            console.log('vlaunch-ar-tracking event received:', event);
+            console.log('Event detail:', event.detail);
+            
+            const trackingStatus = event.detail.status;
+            const trackingElement = document.getElementById('tracking');
+            
+            if (trackingElement) {
+              // Display the tracking state
+              trackingElement.textContent = 'Tracking: ' + trackingStatus;
+            }
+            console.log('Tracking quality changed:', trackingStatus);
+          });
         }
+        // then show tracking events
         
-        console.log('Tracking quality changed:', trackingState);
-      });
-      
-      // Debug: Check if we're getting any tracking events at all
-      console.log('Tracking event listener added');
-      
-      // Debug: Test if the element exists
-      setTimeout(() => {
-        const trackingElement = document.getElementById('tracking');
-        console.log('Tracking element found:', trackingElement);
-        if (trackingElement) {
-          trackingElement.textContent = 'listening...';
-        }
-      }, 1000);
+      })
       
       function getTrackingColor(state) {
         switch (state) {
