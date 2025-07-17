@@ -177,57 +177,42 @@
       notify
     >
       <a-assets>
-        <a-mixin
+          <a-mixin
+            shadow
+            id="dividers-k71"
+            gltf-model="src: url(https://assets.3dstreet.app/sets/uoregon/gltf-exports/draco/traffic-post-k71.glb)"
+          ></a-mixin>
+          <a-mixin
+            shadow
+            id="landscape-sunflower"
+            gltf-model="src: url(https://cdn.glitch.me/b37e506f-65c9-49b0-b29e-ba5c75b8d553/sunflower.glb?v=1711151552432)"
+          ></a-mixin>
+
+          <a-mixin
           shadow
-          id="dividers-k71"
-          gltf-model="src: url(https://assets.3dstreet.app/sets/uoregon/gltf-exports/draco/traffic-post-k71.glb)"
+          id="temporary-traffic-cone"
+          gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-traffic-cone.glb)"
         ></a-mixin>
-        <a-mixin
+
+          <a-mixin
           shadow
-          id="landscape-sunflower"
-          gltf-model="src: url(https://cdn.glitch.me/b37e506f-65c9-49b0-b29e-ba5c75b8d553/sunflower.glb?v=1711151552432)"
+          id="dividers-flowers"
+          gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-flowers.glb)"
         ></a-mixin>
 
-        <a-mixin
-        shadow
-        id="temporary-traffic-cone"
-        gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-traffic-cone.glb)"
-      ></a-mixin>
+          <a-mixin
+          shadow
+          id="bollard"
+          gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-bollard.glb)"
+        ></a-mixin>
 
-      <a-mixin
-      shadow
-      id="dividers-flowers"
-      gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-flowers.glb)"
-    ></a-mixin>
-
-    <a-mixin
-    shadow
-    id="dividers-bollard"
-    gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-bollard.glb)"
-  ></a-mixin>
-
-  <a-mixin
-  shadow
-  id="safehit"
-  gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-safehit.glb)"
-></a-mixin>
-        <!-- 
-                                                  loaded from 3dstreet included here for reference 
-        <a-asset-item id="dividers" src="${assetUrl}sets/dividers/gltf-exports/draco/dividers.glb"></a-asset-item>        
-        <a-mixin shadow id="dividers-flowers" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: flowers"></a-mixin>
-        <a-mixin shadow id="dividers-planting-strip" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: planting-strip"></a-mixin>
-        <a-mixin shadow id="dividers-planter-box" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: planter-box"></a-mixin>
-        <a-mixin shadow id="dividers-bush" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: bush"></a-mixin>
-        <a-mixin shadow id="dividers-dome" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: dome"></a-mixin>
-        <a-mixin shadow id="safehit" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: bollard"></a-mixin>
-        <a-mixin shadow id="temporary-barricade" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: barricade"></a-mixin>
-        <a-mixin shadow id="temporary-traffic-cone" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: traffic-cone"></a-mixin>
-        <a-mixin shadow id="temporary-jersey-barrier-plastic" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: jersey-barrier-plastic"></a-mixin>
-        <a-mixin shadow id="temporary-jersey-barrier-concrete" scale="1 1 1" rotation="0 0 0" gltf-part="src: #dividers; part: jersey-barrier-concrete"></a-mixin> -->
+          <a-mixin
+          shadow
+          id="safehit"
+          gltf-model="src: url(https://assets.3dstreet.app/sets/dividers/gltf-exports/draco/dividers-safehit.glb)"
+        ></a-mixin>      
       </a-assets>
       <a-entity exit-ar-button="element: #exit-ar" hide-in-ar-mode></a-entity>
-      <!--       <a-entity position="0 0 -1" particle-system="velocityValue: 0 2 0;color: #EF0000,#44CC00"></a-entity>
- -->
       <a-camera position="0 1.2 6"></a-camera>
       <a-ring
         id="reticle"
@@ -486,7 +471,7 @@
       );
       document.getElementById("btn_1").onclick = setSelected.bind(
         document.getElementById("btn_1"),
-        "dividers-bollard"
+        "bollard"
       );
       document.getElementById("btn_2").onclick = setSelected.bind(
         document.getElementById("btn_2"),
@@ -568,60 +553,63 @@
                 document.getElementById("post").style.visibility = "visible";
               }
 
-              // Get the uncrushed child entities data
-              var dataString = getChildEntitiesInfo(
-                document.getElementById("parent")
-              );
+              // Wait for A-Frame to fully initialize objects before getting child entities data
+              setTimeout(() => {
+                // Get the uncrushed child entities data
+                var dataString = getChildEntitiesInfo(
+                  document.getElementById("parent")
+                );
 
-              const queryParams = new URLSearchParams(document.location.search);
-              const sceneMetadata = document
-                .querySelector("a-scene")
-                .getAttribute("metadata");
+                const queryParams = new URLSearchParams(document.location.search);
+                const sceneMetadata = document
+                  .querySelector("a-scene")
+                  .getAttribute("metadata");
 
-              // Get lat/long/elevation from either query params or scene metadata
-              const lat = queryParams.get("lat") || sceneMetadata.lat;
-              const long = queryParams.get("long") || sceneMetadata.long;
-              const elevation = queryParams.get("elevation") || sceneMetadata.elevation;
+                // Get lat/long/elevation from either query params or scene metadata
+                const lat = queryParams.get("lat") || sceneMetadata.lat;
+                const long = queryParams.get("long") || sceneMetadata.long;
+                const elevation = queryParams.get("elevation") || sceneMetadata.elevation;
 
-              // Build the scene data structure
-              let sceneData = {
-                title: "Bollard Buddy Session",
-                version: "0.5.5",
-                data: [
-                  {
-                    id: "street-container",
-                    "data-layer-name": "User Layers",
-                    components: {},
-                    children: [                  {
-                    "data-layer-name": "Bollard Buddy Session",
-                    components: {},
-                    children: dataString
-                  }]
-                  }
-                  // {
-                  //   id: "environment",
-                  //   "data-layer-name": "Environment",
-                  //   components: {"street-environment": ""}
-                  // },
-                  // {
-                  //   id: "reference-layers",
-                  //   "data-layer-name": "Geospatial Layers",
-                  //   components: {
-                  //     "street-geo": `longitude: ${long}; latitude: ${lat}; orthometricHeight: ${elevation};`
-                  //   }
-                  // }
-                ]
-              };
-              
-              // local dev
-              // document.getElementById("shareLink").value =
-              //   "http://localhost:3333/#crushed-3dstreet-json:" +
-              //   encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
+                // Build the scene data structure
+                let sceneData = {
+                  title: "Bollard Buddy Session",
+                  version: "0.5.5",
+                  data: [
+                    {
+                      id: "street-container",
+                      "data-layer-name": "User Layers",
+                      components: {},
+                      children: [                  {
+                      "data-layer-name": "Bollard Buddy Session",
+                      components: {},
+                      children: dataString
+                    }]
+                    }
+                    // {
+                    //   id: "environment",
+                    //   "data-layer-name": "Environment",
+                    //   components: {"street-environment": ""}
+                    // },
+                    // {
+                    //   id: "reference-layers",
+                    //   "data-layer-name": "Geospatial Layers",
+                    //   components: {
+                    //     "street-geo": `longitude: ${long}; latitude: ${lat}; orthometricHeight: ${elevation};`
+                    //   }
+                    // }
+                  ]
+                };
+                
+                // local dev
+                // document.getElementById("shareLink").value =
+                //   "http://localhost:3333/#crushed-3dstreet-json:" +
+                //   encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
 
-              // production
-              document.getElementById("shareLink").value =
-                "https://3dstreet.app/#crushed-3dstreet-json:" +
-                encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
+                // production
+                document.getElementById("shareLink").value =
+                  "https://3dstreet.app/#crushed-3dstreet-json:" +
+                  encodeURIComponent(window.JSONCrush.crush(JSON.stringify(sceneData)));
+              }, 500);
             });
 
             session.requestReferenceSpace("viewer").then((space) => {
