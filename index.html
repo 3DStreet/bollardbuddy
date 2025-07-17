@@ -286,14 +286,7 @@
           >; Compass: <span id="compass">x</span> <span id="tracking"></span>
         </p>
         <div id="menu" class="scrolling-wrapper">
-          <div class="card selected" id="btn_0"><h2>Cone</h2></div>
-          <div class="card" id="btn_1"><h2>Bollard</h2></div>
-          <div class="card" id="btn_2"><h2>Flowers</h2></div>
-          <div class="card" id="btn_3"><h2>Delineator</h2></div>
-          <div class="card" id="btn_4"><h2>Bench</h2></div>
-          <div class="card" id="btn_5"><h2>Lamp</h2></div>
-          <div class="card" id="btn_6"><h2>Dining</h2></div>
-          <div class="card" id="btn_7"><h2>Measure</h2></div>
+          <!-- Menu buttons will be generated dynamically -->
         </div>
       </div>
     </div>
@@ -465,38 +458,30 @@
         this.classList.add("selected");
       }
 
-      document.getElementById("btn_0").onclick = setSelected.bind(
-        document.getElementById("btn_0"),
-        "temporary-traffic-cone"
-      );
-      document.getElementById("btn_1").onclick = setSelected.bind(
-        document.getElementById("btn_1"),
-        "bollard"
-      );
-      document.getElementById("btn_2").onclick = setSelected.bind(
-        document.getElementById("btn_2"),
-        "dividers-flowers"
-      );
-      document.getElementById("btn_3").onclick = setSelected.bind(
-        document.getElementById("btn_3"),
-        "safehit"
-      );
-      document.getElementById("btn_4").onclick = setSelected.bind(
-        document.getElementById("btn_4"),
-        "bench"
-      );
-      document.getElementById("btn_5").onclick = setSelected.bind(
-        document.getElementById("btn_5"),
-        "lamp-traditional"
-      );
-      document.getElementById("btn_6").onclick = setSelected.bind(
-        document.getElementById("btn_6"),
-        "outdoor_dining"
-      );
-      document.getElementById("btn_7").onclick = setSelected.bind(
-        document.getElementById("btn_7"),
-        "measure-line"
-      );
+      // Data-driven menu configuration
+      const menuItems = [
+        { id: "temporary-traffic-cone", label: "Cone" },
+        { id: "measure-line", label: "Measure" },
+        { id: "bollard", label: "Bollard" },
+        { id: "dividers-flowers", label: "Flowers" },
+        { id: "safehit", label: "Delineator" },
+        { id: "bench", label: "Bench" },
+        { id: "lamp-traditional", label: "Lamp" },
+        { id: "outdoor_dining", label: "Dining" }
+      ];
+
+      // Generate menu buttons dynamically
+      const menuContainer = document.getElementById("menu");
+      menuContainer.innerHTML = ""; // Clear existing buttons
+      
+      menuItems.forEach((item, index) => {
+        const button = document.createElement("div");
+        button.className = index === 0 ? "card selected" : "card";
+        button.id = `btn_${index}`;
+        button.innerHTML = `<h2>${item.label}</h2>`;
+        button.onclick = setSelected.bind(button, item.id);
+        menuContainer.appendChild(button);
+      });
       document
         .getElementById("overlay")
         .addEventListener("pointerdown", (event) => {
