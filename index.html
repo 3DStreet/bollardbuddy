@@ -236,6 +236,121 @@
           }
         }
       });
+
+      // VLaunch video frame capture component
+      AFRAME.registerComponent('vlaunch-screenshot', {
+        schema: {
+          autoCapture: { type: 'boolean', default: false },
+          interval: { type: 'number', default: 1000 }
+        },
+        init: function () {
+          this.lastCapture = 0;
+          this.videoTexture = null;
+          
+          // Create material for displaying captured frame
+          const material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide
+          });
+          
+          // Apply material when loaded
+          this.el.addEventListener('loaded', () => {
+            const mesh = this.el.getObject3D('mesh');
+            if (mesh) {
+              mesh.material = material;
+              this.material = material;
+              console.log('VLaunch screenshot material applied');
+            }
+          });
+          
+          // Check if VLaunch is available
+          this.checkVLaunchAvailability();
+        },
+        checkVLaunchAvailability: function () {
+          if (typeof VLaunch !== 'undefined' && VLaunch.requestVideoFrame) {
+            console.log('VLaunch.requestVideoFrame available');
+            this.vlaunchAvailable = true;
+          } else {
+            console.log('VLaunch.requestVideoFrame not available - checking again in 1s');
+            setTimeout(() => this.checkVLaunchAvailability(), 1000);
+          }
+        },
+        tick: function (time, timeDelta) {
+          if (!this.data.autoCapture || !this.vlaunchAvailable) return;
+          
+          if (time - this.lastCapture > this.data.interval) {
+            this.captureFrame();
+            this.lastCapture = time;
+          }
+        },
+        captureFrame: function () {
+          if (!this.vlaunchAvailable) {
+            console.warn('VLaunch not available for video frame capture');
+            return;
+          }
+          
+          console.log('Requesting video frame from VLaunch...');
+          
+          VLaunch.requestVideoFrame((data) => {
+            console.log('VLaunch video frame received:', data);
+            
+            if (data && data.data && data.format === 'base64Jpeg') {
+              this.processVideoFrame(data);
+            } else {
+              console.warn('Unexpected video frame data format:', data);
+            }
+          });
+        },
+        processVideoFrame: function (frameData) {
+          console.log('Processing video frame:', {
+            width: frameData.width,
+            height: frameData.height,
+            format: frameData.format,
+            dataLength: frameData.data.length
+          });
+          
+          // Create image from base64 data
+          const img = new Image();
+          img.onload = () => {
+            console.log('Video frame image loaded, creating texture');
+            
+            // Create or update texture
+            if (!this.videoTexture) {
+              this.videoTexture = new THREE.Texture(img);
+              this.videoTexture.needsUpdate = true;
+              
+              if (this.material) {
+                this.material.map = this.videoTexture;
+                this.material.needsUpdate = true;
+                console.log('Video frame texture applied to material');
+              }
+            } else {
+              this.videoTexture.image = img;
+              this.videoTexture.needsUpdate = true;
+              console.log('Video frame texture updated');
+            }
+          };
+          
+          img.onerror = (error) => {
+            console.error('Failed to load video frame image:', error);
+          };
+          
+          // Set image source with base64 data
+          img.src = `data:image/jpeg;base64,${frameData.data}`;
+        },
+        manualCapture: function () {
+          console.log('Manual video frame capture triggered');
+          this.captureFrame();
+        },
+        remove: function () {
+          if (this.videoTexture) {
+            this.videoTexture.dispose();
+          }
+          if (this.material) {
+            this.material.dispose();
+          }
+        }
+      });
     </script>
     <!-- <script src="https://unpkg.com/3dstreet@0.4.11/dist/aframe-street-component.js"></script> -->
     <script src="play.js"></script>
@@ -316,6 +431,7 @@
 
       <a-entity id="parent"></a-entity>
 
+
       <a-entity light="type: ambient; intensity: 0.5;"></a-entity>
       <a-light
         type="directional"
@@ -361,6 +477,20 @@
         </p>
         <div id="menu" class="scrolling-wrapper">
           <!-- Menu buttons will be generated dynamically -->
+        </div>
+        
+        <!-- Screenshot thumbnails gallery -->
+        <div id="screenshot-gallery" style="
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+          padding: 10px 0;
+          max-height: 80px;
+          overflow-y: auto;
+          border-top: 1px solid rgba(255,255,255,0.2);
+          margin-top: 10px;
+        ">
+          <!-- Thumbnails will be added here -->
         </div>
       </div>
     </div>
@@ -508,6 +638,353 @@
           console.log("Measurement completed:", window.MEASURE_STATE.startPoint, "to", endPoint);
         }
       }
+      
+      function handleCaptureClick(position) {
+        console.log("Capture tool activated at:", position);
+        
+        // Prevent multiple captures by checking if one is already in progress
+        if (window.CAPTURE_IN_PROGRESS) {
+          console.log("Capture already in progress, ignoring");
+          return;
+        }
+        
+        window.CAPTURE_IN_PROGRESS = true;
+        
+        // Create purple sphere at capture location
+        const captureId = "capture-" + Date.now();
+        const captureEntity = document.createElement("a-entity");
+        captureEntity.setAttribute("id", captureId);
+        
+        // Create purple sphere
+        const sphereEntity = document.createElement("a-sphere");
+        sphereEntity.setAttribute("radius", "0.05");
+        sphereEntity.setAttribute("material", {
+          color: "#8A2BE2",
+          transparent: true,
+          opacity: 0.8,
+          metalness: 0.3,
+          roughness: 0.7
+        });
+        sphereEntity.setAttribute("position", position);
+        
+        captureEntity.appendChild(sphereEntity);
+        document.getElementById("parent").appendChild(captureEntity);
+        
+        console.log("Purple capture sphere placed");
+        
+        // Trigger screenshot capture
+        if (typeof VLaunch !== 'undefined' && VLaunch.requestVideoFrame) {
+          console.log("Requesting video frame...");
+          
+          let captureProcessed = false;
+          VLaunch.requestVideoFrame((data) => {
+            if (captureProcessed) {
+              console.log("Ignoring duplicate VLaunch callback");
+              return;
+            }
+            captureProcessed = true;
+            
+            if (data && data.data && data.format === 'base64Jpeg') {
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+              const filename = `capture-${timestamp}.jpg`;
+              createARScreenshot(data, filename);
+            } else {
+              console.warn('Unexpected video frame data');
+            }
+            
+            // Reset capture flag
+            setTimeout(() => {
+              window.CAPTURE_IN_PROGRESS = false;
+            }, 1000);
+          });
+        } else {
+          console.warn("VLaunch not available - using fallback");
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `capture-${timestamp}.png`;
+          captureThreeJSCanvas(filename);
+          
+          // Reset capture flag
+          setTimeout(() => {
+            window.CAPTURE_IN_PROGRESS = false;
+          }, 1000);
+        }
+      }
+      
+      
+      function handleScreenshotClick(position) {
+        console.log("Screenshot functionality triggered at:", position);
+        
+        if (typeof VLaunch !== 'undefined' && VLaunch.requestVideoFrame) {
+          console.log("Taking AR screenshot...");
+          
+          VLaunch.requestVideoFrame((data) => {
+            console.log("VLaunch video frame received for screenshot:", {
+              width: data.width,
+              height: data.height,
+              format: data.format,
+              dataLength: data.data.length
+            });
+            
+            if (data && data.data && data.format === 'base64Jpeg') {
+              createARScreenshot(data);
+            } else {
+              console.warn('Unexpected video frame data for screenshot:', data);
+            }
+          });
+        } else {
+          console.warn("VLaunch.requestVideoFrame not available for screenshot");
+          // Fallback to just Three.js canvas capture
+          captureThreeJSCanvas();
+        }
+      }
+      
+      function createARScreenshot(videoFrameData, filename = 'ar-screenshot.jpg') {
+        console.log("Creating AR screenshot composite...");
+        
+        const scene = document.querySelector('a-scene');
+        const renderer = scene.renderer;
+        const canvas = renderer.domElement;
+        
+        // Create a temporary canvas for compositing
+        const compositeCanvas = document.createElement('canvas');
+        const ctx = compositeCanvas.getContext('2d');
+        
+        // Set canvas size to match video frame
+        compositeCanvas.width = videoFrameData.width;
+        compositeCanvas.height = videoFrameData.height;
+        
+        // Create image from base64 video frame
+        const backgroundImg = new Image();
+        backgroundImg.onload = () => {
+          console.log("Background video frame loaded, compositing...");
+          
+          // Draw background (camera feed)
+          ctx.drawImage(backgroundImg, 0, 0, compositeCanvas.width, compositeCanvas.height);
+          
+          // Create Three.js scene image
+          const sceneImg = new Image();
+          sceneImg.onload = () => {
+            console.log("Three.js scene image loaded, final compositing...");
+            
+            // Draw Three.js scene on top with transparency
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(sceneImg, 0, 0, compositeCanvas.width, compositeCanvas.height);
+            
+            // Convert to blob and download
+            compositeCanvas.toBlob((blob) => {
+              downloadScreenshot(blob, filename);
+            }, 'image/jpeg', 0.9);
+          };
+          
+          sceneImg.onerror = () => {
+            console.warn("Failed to load Three.js canvas, saving background only");
+            compositeCanvas.toBlob((blob) => {
+              downloadScreenshot(blob, filename);
+            }, 'image/jpeg', 0.9);
+          };
+          
+          // Get Three.js canvas as image
+          sceneImg.src = canvas.toDataURL('image/png');
+        };
+        
+        backgroundImg.onerror = () => {
+          console.error("Failed to load video frame for screenshot");
+        };
+        
+        backgroundImg.src = `data:image/jpeg;base64,${videoFrameData.data}`;
+      }
+      
+      function captureThreeJSCanvas(filename = 'ar-scene.png') {
+        console.log("Capturing Three.js canvas only...");
+        
+        const scene = document.querySelector('a-scene');
+        const canvas = scene.renderer.domElement;
+        
+        canvas.toBlob((blob) => {
+          downloadScreenshot(blob, filename);
+        }, 'image/png');
+      }
+      
+      function downloadScreenshot(blob, filename) {
+        console.log("📷 downloadScreenshot called:", filename);
+        
+        // Check if this filename is already being processed
+        if (window.PROCESSING_SCREENSHOTS && window.PROCESSING_SCREENSHOTS.has(filename)) {
+          console.log("Already processing this screenshot, skipping:", filename);
+          return;
+        }
+        
+        // Track processing screenshots
+        if (!window.PROCESSING_SCREENSHOTS) {
+          window.PROCESSING_SCREENSHOTS = new Set();
+        }
+        window.PROCESSING_SCREENSHOTS.add(filename);
+        
+        // Convert blob to base64 data URL 
+        const reader = new FileReader();
+        reader.onload = function() {
+          const dataUrl = reader.result;
+          
+          // Add thumbnail to gallery (main functionality)
+          addThumbnailToGallery(dataUrl, filename);
+          
+          // Remove from processing set after a delay
+          setTimeout(() => {
+            window.PROCESSING_SCREENSHOTS.delete(filename);
+          }, 2000);
+        };
+        reader.readAsDataURL(blob);
+      }
+      
+      function addThumbnailToGallery(dataUrl, filename) {
+        console.log("Adding thumbnail to gallery:", filename);
+        
+        const gallery = document.getElementById("screenshot-gallery");
+        if (!gallery) {
+          console.warn("Screenshot gallery not found");
+          return;
+        }
+        
+        // Check if this filename already exists to prevent duplicates
+        const existingThumbnails = gallery.querySelectorAll('img');
+        for (let img of existingThumbnails) {
+          if (img.dataset.filename === filename) {
+            console.log("Thumbnail already exists, skipping:", filename);
+            return;
+          }
+        }
+        
+        // Create thumbnail container
+        const thumbnailContainer = document.createElement('div');
+        thumbnailContainer.style.cssText = `
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin: 2px;
+        `;
+        
+        // Create thumbnail image
+        const thumbnail = document.createElement('img');
+        thumbnail.src = dataUrl;
+        thumbnail.dataset.filename = filename; // Store filename for duplicate checking
+        thumbnail.style.cssText = `
+          width: 60px;
+          height: 45px;
+          object-fit: cover;
+          border: 2px solid #8A2BE2;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: transform 0.2s;
+        `;
+        
+        // Create timestamp label
+        const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const label = document.createElement('div');
+        label.textContent = timestamp;
+        label.style.cssText = `
+          font-size: 10px;
+          color: white;
+          text-align: center;
+          margin-top: 2px;
+          background: rgba(0,0,0,0.5);
+          padding: 1px 3px;
+          border-radius: 2px;
+        `;
+        
+        // Add hover effect
+        thumbnail.addEventListener('mouseenter', () => {
+          thumbnail.style.transform = 'scale(1.1)';
+        });
+        thumbnail.addEventListener('mouseleave', () => {
+          thumbnail.style.transform = 'scale(1)';
+        });
+        
+        // Add click to view full size
+        thumbnail.addEventListener('click', () => {
+          showFullSizeImage(dataUrl, filename);
+        });
+        
+        thumbnailContainer.appendChild(thumbnail);
+        thumbnailContainer.appendChild(label);
+        
+        // Add to gallery (newest last)
+        gallery.appendChild(thumbnailContainer);
+        
+        // Limit to 10 thumbnails to prevent clutter
+        while (gallery.children.length > 10) {
+          gallery.removeChild(gallery.firstChild);
+        }
+        
+        console.log("✅ Thumbnail added");
+      }
+      
+      function showFullSizeImage(dataUrl, filename) {
+        
+        // Create full-size overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0,0,0,0.9);
+          z-index: 10000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-family: sans-serif;
+        `;
+        
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.style.cssText = `
+          max-width: 90%;
+          max-height: 80%;
+          border: 2px solid white;
+          border-radius: 8px;
+        `;
+        
+        const title = document.createElement('div');
+        title.textContent = filename;
+        title.style.cssText = `
+          margin: 20px;
+          fontSize: 18px;
+          text-align: center;
+        `;
+        
+        const instructions = document.createElement('div');
+        instructions.textContent = 'Long press image to save • Tap outside to close';
+        instructions.style.cssText = `
+          fontSize: 14px;
+          opacity: 0.8;
+          text-align: center;
+        `;
+        
+        overlay.appendChild(title);
+        overlay.appendChild(img);
+        overlay.appendChild(instructions);
+        
+        // Close on click outside image
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) {
+            document.body.removeChild(overlay);
+          }
+        });
+        
+        document.body.appendChild(overlay);
+        
+        // Auto-remove after 30 seconds
+        setTimeout(() => {
+          if (document.body.contains(overlay)) {
+            document.body.removeChild(overlay);
+          }
+        }, 30000);
+      }
+      
       function share() {
         if (navigator.share) {
           navigator
@@ -536,6 +1013,7 @@
       const menuItems = [
         { id: "temporary-traffic-cone", label: "Cone" },
         { id: "measure-line", label: "Measure" },
+        { id: "capture", label: "Capture" },
         { id: "bollard", label: "Bollard" },
         { id: "dividers-flowers", label: "Flowers" },
         { id: "safehit", label: "Delineator" },
@@ -605,6 +1083,11 @@
                   document.getElementById("text").style.visibility = "hidden";
                   document.getElementById("post").style.visibility = "visible";
                 }
+              } else if (newMixin === "capture") {
+                handleCaptureClick(position);
+                // Show DONE button
+                document.getElementById("text").style.visibility = "hidden";
+                document.getElementById("post").style.visibility = "visible";
               } else {
                 placeElement(newMixin, position);
                 // set DONE button to visible
