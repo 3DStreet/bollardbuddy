@@ -17,7 +17,88 @@
     <script src="json-crush.js"></script>
     <script src="ar-helpers.js"></script>
     <script src="mini-serialize.js"></script>
+    <script src="segment-display.js"></script>
     <script>
+      // Canvas-based measurement display component for AR
+      AFRAME.registerComponent('canvas-measurement-display', {
+        schema: {
+          value: { type: 'string', default: '0.00' },
+          width: { type: 'number', default: 200 },
+          height: { type: 'number', default: 60 }
+        },
+        init: function () {
+          this.canvas = document.createElement('canvas');
+          this.canvas.width = this.data.width;
+          this.canvas.height = this.data.height;
+          
+          // Create segment display instance
+          this.display = new SegmentDisplay(this.canvas.id);
+          this.display.pattern = "###.##";
+          this.display.cornerType = SegmentDisplay.RoundedCorner;
+          this.display.displayAngle = 0;
+          this.display.digitHeight = 40;
+          this.display.digitWidth = 24;
+          this.display.digitDistance = 3;
+          this.display.segmentWidth = 4;
+          this.display.segmentDistance = 0.5;
+          this.display.colorOn = "rgba(255, 255, 0, 0.9)";
+          this.display.colorOff = "rgba(255, 255, 0, 0.1)";
+          
+          // Create texture and material
+          this.texture = new THREE.CanvasTexture(this.canvas);
+          this.texture.needsUpdate = true;
+          
+          this.material = new THREE.MeshBasicMaterial({
+            map: this.texture,
+            transparent: true,
+            alphaTest: 0.1,
+            side: THREE.DoubleSide
+          });
+          
+          // Create plane geometry
+          const geometry = new THREE.PlaneGeometry(0.4, 0.12);
+          this.mesh = new THREE.Mesh(geometry, this.material);
+          this.el.setObject3D('mesh', this.mesh);
+          
+          this.updateDisplay();
+        },
+        update: function () {
+          this.updateDisplay();
+        },
+        updateDisplay: function () {
+          // Format value to ###.## pattern
+          const numValue = parseFloat(this.data.value) || 0;
+          const formattedValue = numValue.toFixed(2).padStart(6, ' ');
+          
+          // Update canvas directly since we don't have DOM element
+          const context = this.canvas.getContext('2d');
+          context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          
+          // Set canvas as display element temporarily
+          const tempId = 'temp-display-' + Math.random().toString(36).substr(2, 9);
+          this.canvas.id = tempId;
+          document.body.appendChild(this.canvas);
+          this.canvas.style.display = 'none';
+          
+          this.display.displayId = tempId;
+          this.display.setValue(formattedValue);
+          
+          // Clean up
+          document.body.removeChild(this.canvas);
+          this.canvas.id = '';
+          
+          this.texture.needsUpdate = true;
+        },
+        remove: function () {
+          if (this.material) {
+            this.material.dispose();
+          }
+          if (this.texture) {
+            this.texture.dispose();
+          }
+        }
+      });
+
       // Simplified measure line component for Bollard Buddy
       AFRAME.registerComponent('measure-line', {
         schema: {
@@ -33,21 +114,12 @@
           this.startColor = 0x00ff00;
           this.endColor = 0xff0000;
           
-          // Create label div
-          const labelDiv = document.createElement('div');
-          labelDiv.className = 'measure-label';
-          labelDiv.style.color = '#FFF';
-          labelDiv.style.fontFamily = 'sans-serif';
-          labelDiv.style.padding = '4px 8px';
-          labelDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-          labelDiv.style.borderRadius = '4px';
-          labelDiv.style.fontSize = '14px';
-          labelDiv.style.fontWeight = 'bold';
-          labelDiv.style.position = 'absolute';
-          labelDiv.style.zIndex = '1000';
-          labelDiv.style.pointerEvents = 'none';
-          this.labelDiv = labelDiv;
-          document.body.appendChild(labelDiv);
+          // Create canvas-based measurement display for AR compatibility
+          this.labelEntity = document.createElement('a-entity');
+          this.labelEntity.setAttribute('canvas-measurement-display', {
+            value: '0.00'
+          });
+          this.el.appendChild(this.labelEntity);
         },
         update: function () {
           this.createOrUpdateHelper();
@@ -118,23 +190,25 @@
           this.endEndpoint.position.set(end.x, end.y, end.z);
         },
         updateLabel: function (length) {
-          this.labelDiv.textContent = `${length.toFixed(2)}m`;
+          // Update canvas-based display value
+          this.labelEntity.setAttribute('canvas-measurement-display', {
+            value: length.toFixed(2)
+          });
           
-          // Position label at midpoint
+          // Position label at midpoint with offset
           const midpoint = new THREE.Vector3(
             (this.data.start.x + this.data.end.x) / 2,
-            (this.data.start.y + this.data.end.y) / 2 + 0.5,
+            (this.data.start.y + this.data.end.y) / 2 + 0.3,
             (this.data.start.z + this.data.end.z) / 2
           );
           
-          // Project to screen coordinates
-          const camera = this.el.sceneEl.camera;
-          const vector = midpoint.clone().project(camera);
-          const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-          const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+          this.labelEntity.setAttribute('position', midpoint);
           
-          this.labelDiv.style.left = x + 'px';
-          this.labelDiv.style.top = y + 'px';
+          // Make label always face the camera
+          const camera = this.el.sceneEl.camera;
+          if (camera) {
+            this.labelEntity.setAttribute('look-at', camera);
+          }
         },
         calculateLength: function () {
           const start = this.data.start;
@@ -157,8 +231,8 @@
             this.endEndpoint.material.dispose();
             this.endEndpoint.geometry.dispose();
           }
-          if (this.labelDiv) {
-            this.labelDiv.remove();
+          if (this.labelEntity) {
+            this.labelEntity.remove();
           }
         }
       });
